@@ -1,4 +1,3 @@
-import React from "react";
 import { Route, BrowserRouter, Routes } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import HomePage from "./HomePage";

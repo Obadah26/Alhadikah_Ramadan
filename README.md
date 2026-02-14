@@ -14,14 +14,6 @@ A beautiful web application to track your daily worship during the holy month of
 - 🔐 User authentication with email/password
 - 🌐 Fully responsive design
 
-## 🚀 Live Demo
-
-[Add your live demo link here when deployed]
-
-## 📸 Screenshots
-
-[Add screenshots here]
-
 ## 🛠️ Technologies Used
 
 - React.js with TypeScript

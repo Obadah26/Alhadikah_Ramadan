@@ -27,8 +27,6 @@ import {
   FaMosque,
   FaSun,
   FaUserCircle,
-  FaPrayingHands,
-  FaStarAndCrescent,
 } from "react-icons/fa";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -94,16 +92,6 @@ const HomePage = () => {
     totalMudarasa: 0,
     completionRate: 0,
   });
-
-  // Colors for bars
-  const COLORS = [
-    "#059669",
-    "#10b981",
-    "#34d399",
-    "#6ee7b7",
-    "#0369a1",
-    "#0ea5e9",
-  ];
 
   // Category options for dropdown
   const categories = [
@@ -189,7 +177,7 @@ const HomePage = () => {
     } = await supabase.auth.getUser();
     if (!user) return;
 
-    const { data, error } = await supabase
+    const { data, error: _error } = await supabase
       .from("daily_tracker")
       .select("*")
       .eq("user_id", user.id)
@@ -223,7 +211,7 @@ const HomePage = () => {
     } = await supabase.auth.getUser();
     if (!user) return;
 
-    const { data, error } = await supabase
+    const { data, error: _error } = await supabase
       .from("daily_tracker")
       .select("*")
       .eq("user_id", user.id);
@@ -376,7 +364,7 @@ const HomePage = () => {
   // Show loading state while checking session
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-teal-50 flex items-center justify-center">
+      <div className="min-h-screen bg-linear-to-br from-emerald-50 to-teal-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-emerald-700 mx-auto mb-4"></div>
           <div className="text-emerald-700 text-xl font-semibold">
@@ -395,7 +383,7 @@ const HomePage = () => {
   return (
     <div
       dir="rtl"
-      className="min-h-screen bg-gradient-to-br from-gray-50 to-emerald-50 font-sans"
+      className="min-h-screen bg-linear-to-br from-gray-50 to-emerald-50 font-sans"
     >
       <ToastContainer
         position="top-center"
@@ -411,7 +399,7 @@ const HomePage = () => {
       />
 
       {/* Header */}
-      <header className="bg-gradient-to-l from-emerald-800 to-emerald-600 text-white shadow-xl">
+      <header className="bg-linear-to-l from-emerald-800 to-emerald-600 text-white shadow-xl">
         <div className="container mx-auto px-4 py-4">
           <div className="flex justify-between items-center">
             <div className="flex items-center space-x-3 space-x-reverse">
@@ -744,7 +732,7 @@ const HomePage = () => {
                             }
                             radius={[0, 4, 4, 0]}
                           >
-                            {getCategoryData().map((entry, index) => (
+                            {getCategoryData().map((_, index) => (
                               <Cell
                                 key={`cell-${index}`}
                                 fill={

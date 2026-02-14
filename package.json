@@ -1,6 +1,6 @@
 {
   "name": "alhadikah",
-  "homepage": "https://Obadah26.github.io/Alhadikah_Ramadan.git",
+  "homepage": "https://Obadah26.github.io/Alhadikah_Ramadan",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -8,12 +8,13 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "predeploy": "npm run build",
+    "deploy":"gh-pages -d dist"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.95.3",
     "@tailwindcss/vite": "^4.1.18",
-    "gh-pages": "^6.3.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-icons": "^5.5.0",
