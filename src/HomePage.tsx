@@ -4,18 +4,12 @@ import { supabase } from "../src/supabaseClient";
 import Auth from "./Auth";
 import {
   FaMoon,
-  FaBook,
-  FaPray,
-  FaStar,
   FaSignOutAlt,
-  FaCheckCircle,
-  FaCalendarAlt,
   FaChartBar,
   FaHome,
   FaUsers,
   FaQuran,
   FaMosque,
-  FaSun,
   FaUserCircle,
   FaBookOpen,
 } from "react-icons/fa";
@@ -78,7 +72,6 @@ const HomePage = () => {
     UserComparisonData[]
   >([]);
   const [statsLoading, setStatsLoading] = useState(false);
-  const [totalUniqueUsers, setTotalUniqueUsers] = useState<number>(0);
   const [userStats, setUserStats] = useState({
     totalDays: 0,
     tarawihCount: 0,
@@ -379,7 +372,6 @@ const HomePage = () => {
     }
 
     setUserComparisonData(comparisonArray);
-    setTotalUniqueUsers(comparisonArray.length);
     setStatsLoading(false);
   };
 
@@ -945,7 +937,7 @@ const HomePage = () => {
                                         className={`px-2 py-1 rounded-full inline-flex items-center gap-1 ${
                                           user.alduhaa === maxValues.alduhaa &&
                                           maxValues.alduhaa > 0
-                                            ? "bg-gradient-to-l from-yellow-500 to-amber-600 text-white shadow-lg font-bold"
+                                            ? "bg-linear-to-l from-yellow-500 to-amber-600 text-white shadow-lg font-bold"
                                             : user.alduhaa > 0
                                               ? "bg-yellow-100 text-yellow-800"
                                               : "text-gray-500"
@@ -971,7 +963,7 @@ const HomePage = () => {
                                         className={`px-2 py-1 rounded-full inline-flex items-center gap-1 ${
                                           user.sunan === maxValues.sunan &&
                                           maxValues.sunan > 0
-                                            ? "bg-gradient-to-l from-yellow-500 to-amber-600 text-white shadow-lg font-bold"
+                                            ? "bg-linear-to-l from-yellow-500 to-amber-600 text-white shadow-lg font-bold"
                                             : user.sunan > 0
                                               ? "bg-teal-100 text-teal-800"
                                               : "text-gray-500"
@@ -997,7 +989,7 @@ const HomePage = () => {
                                         className={`px-2 py-1 rounded-full inline-flex items-center gap-1 ${
                                           user.tarawih === maxValues.tarawih &&
                                           maxValues.tarawih > 0
-                                            ? "bg-gradient-to-l from-yellow-500 to-amber-600 text-white shadow-lg font-bold"
+                                            ? "bg-linear-to-l from-yellow-500 to-amber-600 text-white shadow-lg font-bold"
                                             : user.tarawih > 0
                                               ? "bg-green-100 text-green-800"
                                               : "text-gray-500"
@@ -1023,7 +1015,7 @@ const HomePage = () => {
                                         className={`px-2 py-1 rounded-full inline-flex items-center gap-1 ${
                                           user.witr === maxValues.witr &&
                                           maxValues.witr > 0
-                                            ? "bg-gradient-to-l from-yellow-500 to-amber-600 text-white shadow-lg font-bold"
+                                            ? "bg-linear-to-l from-yellow-500 to-amber-600 text-white shadow-lg font-bold"
                                             : user.witr > 0
                                               ? "bg-cyan-100 text-cyan-800"
                                               : "text-gray-500"
@@ -1049,7 +1041,7 @@ const HomePage = () => {
                                         className={`px-2 py-1 rounded-full inline-flex items-center gap-1 ${
                                           user.azkar === maxValues.azkar &&
                                           maxValues.azkar > 0
-                                            ? "bg-gradient-to-l from-yellow-500 to-amber-600 text-white shadow-lg font-bold"
+                                            ? "bg-linear-to-l from-yellow-500 to-amber-600 text-white shadow-lg font-bold"
                                             : user.azkar > 0
                                               ? "bg-amber-100 text-amber-800"
                                               : "text-gray-500"
@@ -1076,7 +1068,7 @@ const HomePage = () => {
                                           user.group_reading ===
                                             maxValues.group_reading &&
                                           maxValues.group_reading > 0
-                                            ? "bg-gradient-to-l from-yellow-500 to-amber-600 text-white shadow-lg font-bold"
+                                            ? "bg-linear-to-l from-yellow-500 to-amber-600 text-white shadow-lg font-bold"
                                             : user.group_reading > 0
                                               ? "bg-orange-100 text-orange-800"
                                               : "text-gray-500"
@@ -1103,7 +1095,7 @@ const HomePage = () => {
                                         className={`px-2 py-1 rounded-lg inline-flex items-center gap-1 ${
                                           user.reading === maxValues.reading &&
                                           maxValues.reading > 0
-                                            ? "bg-gradient-to-l from-yellow-500 to-amber-600 text-white shadow-lg font-bold"
+                                            ? "bg-linear-to-l from-yellow-500 to-amber-600 text-white shadow-lg font-bold"
                                             : "text-blue-700"
                                         }`}
                                       >
@@ -1128,7 +1120,7 @@ const HomePage = () => {
                                           user.mudarasa ===
                                             maxValues.mudarasa &&
                                           maxValues.mudarasa > 0
-                                            ? "bg-gradient-to-l from-yellow-500 to-amber-600 text-white shadow-lg font-bold"
+                                            ? "bg-linear-to-l from-yellow-500 to-amber-600 text-white shadow-lg font-bold"
                                             : "text-indigo-700"
                                         }`}
                                       >
@@ -1237,20 +1229,6 @@ const StatCard = ({
       </div>
       <div className={`text-4xl text-${color}-300`}>{icon}</div>
     </div>
-  </div>
-);
-
-// Summary Card Component
-const SummaryCard = ({
-  label,
-  value,
-}: {
-  label: string;
-  value: string | number;
-}) => (
-  <div className="bg-emerald-50 rounded-xl p-6 text-center">
-    <p className="text-3xl font-bold text-emerald-700">{value}</p>
-    <p className="text-gray-600">{label}</p>
   </div>
 );
 
