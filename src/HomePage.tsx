@@ -3,16 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "../src/supabaseClient";
 import Auth from "./Auth";
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  CartesianGrid,
-  Cell,
-} from "recharts";
-import {
   FaMoon,
   FaBook,
   FaPray,
@@ -27,6 +17,7 @@ import {
   FaMosque,
   FaSun,
   FaUserCircle,
+  FaBookOpen,
 } from "react-icons/fa";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -39,6 +30,8 @@ interface DayData {
   mudarasa: number;
   azkar: boolean;
   reading: number;
+  alduhaa: boolean;
+  group_reading: boolean;
 }
 
 interface UserProfile {
@@ -58,6 +51,8 @@ interface UserComparisonData {
   reading: number;
   mudarasa: number;
   totalDays: number;
+  alduhaa: number;
+  group_reading: number;
 }
 
 const HomePage = () => {
@@ -68,7 +63,7 @@ const HomePage = () => {
   const [saving, setSaving] = useState(false);
   const [selectedDay, setSelectedDay] = useState<number>(1);
   const [activeTab, setActiveTab] = useState<"tracker" | "stats">("tracker");
-  const [selectedCategory, setSelectedCategory] = useState<string>("tarawih");
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [formData, setFormData] = useState<DayData>({
     tarawih: false,
     sunan: false,
@@ -76,6 +71,8 @@ const HomePage = () => {
     mudarasa: 0,
     azkar: false,
     reading: 0,
+    alduhaa: false,
+    group_reading: false,
   });
   const [userComparisonData, setUserComparisonData] = useState<
     UserComparisonData[]
@@ -90,6 +87,8 @@ const HomePage = () => {
     azkarCount: 0,
     totalReading: 0,
     totalMudarasa: 0,
+    alduhaaCount: 0,
+    groupReadingCount: 0,
     completionRate: 0,
   });
 
@@ -98,12 +97,24 @@ const HomePage = () => {
     {
       id: "tarawih",
       name: "صلاة التراويح",
-      icon: <FaPray />,
+      icon: <FaMosque />,
       color: "#059669",
     },
-    { id: "sunan", name: "السنن الرواتب", icon: <FaStar />, color: "#10b981" },
-    { id: "witr", name: "صلاة الوتر", icon: <FaMoon />, color: "#34d399" },
-    { id: "azkar", name: "الأذكار", icon: <FaSun />, color: "#6ee7b7" },
+    {
+      id: "sunan",
+      name: "السنن الرواتب",
+      icon: <FaMosque />,
+      color: "#10b981",
+    },
+    { id: "witr", name: "صلاة الوتر", icon: <FaMosque />, color: "#34d399" },
+    { id: "azkar", name: "الأذكار", icon: <FaBookOpen />, color: "purple" },
+    { id: "alduhaa", name: "صلاة الضحى", icon: <FaMosque />, color: "#eab308" },
+    {
+      id: "group_reading",
+      name: "المدارسة الجماعية",
+      icon: <FaUsers />,
+      color: "#f97316",
+    },
     {
       id: "reading",
       name: "القراءة (صفحات)",
@@ -112,14 +123,13 @@ const HomePage = () => {
     },
     {
       id: "mudarasa",
-      name: "المدارسة (مرات)",
-      icon: <FaBook />,
+      name: "المدارسة (صفحات)",
+      icon: <FaQuran />,
       color: "#0ea5e9",
     },
   ];
 
   // Check if user is logged in and get profile
-  // In the useEffect for user profile
   useEffect(() => {
     const initializeUser = async () => {
       const {
@@ -154,6 +164,17 @@ const HomePage = () => {
     };
 
     initializeUser();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      if (!session) {
+        navigate("/auth");
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, [navigate]);
 
   // Load data when the day changes
@@ -192,6 +213,8 @@ const HomePage = () => {
         mudarasa: data.mudarasa,
         azkar: data.azkar,
         reading: data.reading,
+        alduhaa: data.alduhaa,
+        group_reading: data.group_reading,
       });
     } else {
       setFormData({
@@ -201,6 +224,8 @@ const HomePage = () => {
         mudarasa: 0,
         azkar: false,
         reading: 0,
+        alduhaa: false,
+        group_reading: false,
       });
     }
   };
@@ -222,12 +247,22 @@ const HomePage = () => {
       const sunanCount = data.filter((d) => d.sunan).length;
       const witrCount = data.filter((d) => d.witr).length;
       const azkarCount = data.filter((d) => d.azkar).length;
+      const alduhaaCount = data.filter((d) => d.alduhaa).length;
+      const groupReadingCount = data.filter((d) => d.group_reading).length;
       const totalReading = data.reduce((sum, d) => sum + (d.reading || 0), 0);
       const totalMudarasa = data.reduce((sum, d) => sum + (d.mudarasa || 0), 0);
 
+      // Update completedDays to include new fields
       const completedDays = data.filter(
-        (d) => d.tarawih && d.sunan && d.witr && d.azkar,
+        (d) =>
+          d.tarawih &&
+          d.sunan &&
+          d.witr &&
+          d.azkar &&
+          d.alduhaa &&
+          d.group_reading,
       ).length;
+
       const completionRate =
         totalDays > 0 ? Math.round((completedDays / totalDays) * 100) : 0;
 
@@ -237,6 +272,8 @@ const HomePage = () => {
         sunanCount,
         witrCount,
         azkarCount,
+        alduhaaCount,
+        groupReadingCount,
         totalReading,
         totalMudarasa,
         completionRate,
@@ -274,7 +311,7 @@ const HomePage = () => {
     // Create a map to aggregate data by user
     const userMap = new Map<string, UserComparisonData>();
 
-    // Initialize with all profiles
+    // Initialize with ALL profiles (even those with no data)
     profiles.forEach((profile: any) => {
       userMap.set(profile.id, {
         userId: profile.id,
@@ -285,6 +322,8 @@ const HomePage = () => {
         azkar: 0,
         reading: 0,
         mudarasa: 0,
+        alduhaa: 0,
+        group_reading: 0,
         totalDays: 0,
       });
     });
@@ -298,18 +337,46 @@ const HomePage = () => {
         if (entry.sunan) userData.sunan++;
         if (entry.witr) userData.witr++;
         if (entry.azkar) userData.azkar++;
+        if (entry.alduhaa) userData.alduhaa++;
+        if (entry.group_reading) userData.group_reading++;
         userData.reading += entry.reading || 0;
         userData.mudarasa += entry.mudarasa || 0;
       }
     });
 
-    // Convert map to array and filter out users with no data
-    const comparisonArray = Array.from(userMap.values())
-      .filter((user) => user.totalDays > 0)
-      .sort((a, b) => {
-        const category = selectedCategory as keyof UserComparisonData;
-        return (b[category] as number) - (a[category] as number);
+    // Convert map to array
+    let comparisonArray = Array.from(userMap.values());
+
+    // Sort based on selected category
+    if (selectedCategory === "all") {
+      // For "all" view: sort by total days, then alphabetically
+      comparisonArray.sort((a, b) => {
+        if (b.totalDays !== a.totalDays) {
+          return b.totalDays - a.totalDays;
+        }
+        return a.userName.localeCompare(b.userName);
       });
+    } else {
+      // For single category view: sort by that category value (highest to lowest)
+      comparisonArray.sort((a, b) => {
+        const aValue = a[
+          selectedCategory as keyof UserComparisonData
+        ] as number;
+        const bValue = b[
+          selectedCategory as keyof UserComparisonData
+        ] as number;
+
+        if (bValue !== aValue) {
+          return bValue - aValue;
+        }
+        // If same value, sort by total days
+        if (b.totalDays !== a.totalDays) {
+          return b.totalDays - a.totalDays;
+        }
+        // Then alphabetically
+        return a.userName.localeCompare(b.userName);
+      });
+    }
 
     setUserComparisonData(comparisonArray);
     setTotalUniqueUsers(comparisonArray.length);
@@ -328,19 +395,70 @@ const HomePage = () => {
       return;
     }
 
-    const { error } = await supabase.from("daily_tracker").upsert({
-      user_id: user.id,
-      day_number: selectedDay,
-      ...formData,
-    });
+    try {
+      // First, check if record exists
+      const { data: existingRecord, error: fetchError } = await supabase
+        .from("daily_tracker")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("day_number", selectedDay)
+        .maybeSingle();
 
-    if (error) {
-      toast.error("حدث خطأ في الحفظ");
-    } else {
-      toast.success("تم الحفظ بنجاح! 🎉");
-      fetchUserStats();
-      fetchUserComparisonData();
+      if (fetchError) {
+        console.error("Error checking existing record:", fetchError);
+        toast.error("حدث خطأ في التحقق من البيانات");
+        setSaving(false);
+        return;
+      }
+
+      let result;
+
+      if (existingRecord) {
+        // Update existing record
+        result = await supabase
+          .from("daily_tracker")
+          .update({
+            tarawih: formData.tarawih,
+            sunan: formData.sunan,
+            witr: formData.witr,
+            mudarasa: formData.mudarasa,
+            azkar: formData.azkar,
+            reading: formData.reading,
+            alduhaa: formData.alduhaa,
+            group_reading: formData.group_reading,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("user_id", user.id)
+          .eq("day_number", selectedDay);
+      } else {
+        // Insert new record
+        result = await supabase.from("daily_tracker").insert({
+          user_id: user.id,
+          day_number: selectedDay,
+          tarawih: formData.tarawih,
+          sunan: formData.sunan,
+          witr: formData.witr,
+          mudarasa: formData.mudarasa,
+          azkar: formData.azkar,
+          reading: formData.reading,
+          alduhaa: formData.alduhaa,
+          group_reading: formData.group_reading,
+        });
+      }
+
+      if (result.error) {
+        console.error("Save error:", result.error);
+        toast.error("حدث خطأ في الحفظ");
+      } else {
+        toast.success("تم الحفظ بنجاح! 🎉");
+        fetchUserStats();
+        fetchUserComparisonData();
+      }
+    } catch (error) {
+      console.error("Unexpected error:", error);
+      toast.error("حدث خطأ غير متوقع");
     }
+
     setSaving(false);
   };
 
@@ -349,17 +467,85 @@ const HomePage = () => {
     toast.info("تم تسجيل الخروج بنجاح");
   };
 
-  // Get data for the selected category
-  const getCategoryData = () => {
-    return userComparisonData.map((user) => ({
-      name:
-        user.userName.length > 10
-          ? user.userName.substring(0, 10) + "..."
-          : user.userName,
-      value: user[selectedCategory as keyof UserComparisonData] as number,
-      fullName: user.userName,
-    }));
+  // Helper function to get the maximum value for the selected category
+  const getMaxValue = () => {
+    if (userComparisonData.length === 0 || selectedCategory === "all") return 0;
+
+    return Math.max(
+      ...userComparisonData.map(
+        (user) => user[selectedCategory as keyof UserComparisonData] as number,
+      ),
+    );
   };
+
+  const maxValue = getMaxValue();
+
+  // Add this with your other helper functions (around line 300)
+  const getMaxValues = () => {
+    if (userComparisonData.length === 0) {
+      return {
+        alduhaa: 0,
+        sunan: 0,
+        tarawih: 0,
+        witr: 0,
+        azkar: 0,
+        group_reading: 0,
+        reading: 0,
+        mudarasa: 0,
+      };
+    }
+
+    return {
+      alduhaa: Math.max(...userComparisonData.map((u) => u.alduhaa)),
+      sunan: Math.max(...userComparisonData.map((u) => u.sunan)),
+      tarawih: Math.max(...userComparisonData.map((u) => u.tarawih)),
+      witr: Math.max(...userComparisonData.map((u) => u.witr)),
+      azkar: Math.max(...userComparisonData.map((u) => u.azkar)),
+      group_reading: Math.max(
+        ...userComparisonData.map((u) => u.group_reading),
+      ),
+      reading: Math.max(...userComparisonData.map((u) => u.reading)),
+      mudarasa: Math.max(...userComparisonData.map((u) => u.mudarasa)),
+    };
+  };
+
+  const maxValues = getMaxValues();
+
+  // Resort data when category changes
+  useEffect(() => {
+    if (userComparisonData.length > 0) {
+      // Create a new sorted array based on selected category
+      const sortedData = [...userComparisonData];
+
+      if (selectedCategory === "all") {
+        sortedData.sort((a, b) => {
+          if (b.totalDays !== a.totalDays) {
+            return b.totalDays - a.totalDays;
+          }
+          return a.userName.localeCompare(b.userName);
+        });
+      } else {
+        sortedData.sort((a, b) => {
+          const aValue = a[
+            selectedCategory as keyof UserComparisonData
+          ] as number;
+          const bValue = b[
+            selectedCategory as keyof UserComparisonData
+          ] as number;
+
+          if (bValue !== aValue) {
+            return bValue - aValue;
+          }
+          if (b.totalDays !== a.totalDays) {
+            return b.totalDays - a.totalDays;
+          }
+          return a.userName.localeCompare(b.userName);
+        });
+      }
+
+      setUserComparisonData(sortedData);
+    }
+  }, [selectedCategory]);
 
   // Show loading state while checking session
   if (loading) {
@@ -402,27 +588,24 @@ const HomePage = () => {
       <header className="bg-linear-to-l from-emerald-800 to-emerald-600 text-white shadow-xl">
         <div className="container mx-auto px-4 py-4">
           <div className="flex justify-between items-center">
-            <div className="flex items-center space-x-3 space-x-reverse">
+            <div className="flex items-center space-x-3">
               <FaMoon className="text-3xl" />
-              <h1 className="text-2xl md:text-3xl font-bold">مُتابع رمضان</h1>
+              <h1 className="text-2xl md:text-3xl font-bold">رمضان كريم</h1>
             </div>
 
             {/* User Info */}
-            <div className="flex items-center space-x-4 space-x-reverse">
+            <div className="flex items-center space-x-10">
               <div className="text-left">
-                <div className="flex items-center space-x-2 space-x-reverse">
-                  <FaUserCircle className="text-2xl" />
-                  <span className="font-semibold">
+                <div className="flex items-center space-x-2">
+                  <FaUserCircle className="text-4xl" />
+                  <span className="font-bold">
                     {userProfile?.name || "مستخدم"}
                   </span>
-                </div>
-                <div className="text-xs text-emerald-100">
-                  {userProfile?.email}
                 </div>
               </div>
               <button
                 onClick={handleLogout}
-                className="flex items-center space-x-2 space-x-reverse bg-red-500 hover:bg-red-600 px-4 py-2 rounded-lg transition duration-300 shadow-md hover:shadow-lg transform hover:scale-105"
+                className="flex items-center space-x-2 bg-red-500 hover:bg-red-600 px-4 py-2 rounded-lg transition duration-300 shadow-md hover:cursor-pointer hover:shadow-lg transform hover:scale-105"
               >
                 <FaSignOutAlt />
                 <span>تسجيل خروج</span>
@@ -434,13 +617,13 @@ const HomePage = () => {
 
       {/* Navigation Tabs */}
       <div className="container mx-auto px-4 mt-6">
-        <div className="flex justify-center space-x-4 space-x-reverse">
+        <div className="flex justify-center space-x-4">
           <button
             onClick={() => setActiveTab("tracker")}
-            className={`flex items-center space-x-2 space-x-reverse px-6 py-3 rounded-lg font-semibold transition duration-300 ${
+            className={`flex items-center space-x-2  px-6 py-3 rounded-lg font-semibold transition duration-300 ${
               activeTab === "tracker"
                 ? "bg-emerald-600 text-white shadow-lg"
-                : "bg-white text-gray-600 hover:bg-emerald-50"
+                : "bg-white text-gray-600 hover:bg-emerald-50 hover:cursor-pointer"
             }`}
           >
             <FaHome />
@@ -448,10 +631,10 @@ const HomePage = () => {
           </button>
           <button
             onClick={() => setActiveTab("stats")}
-            className={`flex items-center space-x-2 space-x-reverse px-6 py-3 rounded-lg font-semibold transition duration-300 ${
+            className={`flex items-center space-x-2  px-6 py-3 rounded-lg font-semibold transition duration-300 ${
               activeTab === "stats"
                 ? "bg-emerald-600 text-white shadow-lg"
-                : "bg-white text-gray-600 hover:bg-emerald-50"
+                : "bg-white text-gray-600 hover:bg-emerald-50 hover:cursor-pointer"
             }`}
           >
             <FaChartBar />
@@ -466,52 +649,53 @@ const HomePage = () => {
             {/* User Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
               <StatCard
-                icon={<FaCalendarAlt />}
-                label="الأيام المسجلة"
-                value={userStats.totalDays}
-                color="emerald"
+                icon={<FaMosque />}
+                label="الضحى"
+                value={userStats.alduhaaCount}
+                color="yellow"
               />
               <StatCard
-                icon={<FaPray />}
-                label="التراويح"
-                value={userStats.tarawihCount}
-                color="green"
-              />
-              <StatCard
-                icon={<FaStar />}
+                icon={<FaMosque />}
                 label="السنن"
                 value={userStats.sunanCount}
                 color="teal"
               />
               <StatCard
-                icon={<FaMoon />}
+                icon={<FaMosque />}
+                label="التراويح"
+                value={userStats.tarawihCount}
+                color="green"
+              />
+              <StatCard
+                icon={<FaMosque />}
                 label="الوتر"
                 value={userStats.witrCount}
                 color="cyan"
               />
+
               <StatCard
-                icon={<FaSun />}
-                label="الأذكار"
+                icon={<FaBookOpen />}
+                label="أذكار الصباح والمساء"
                 value={userStats.azkarCount}
                 color="amber"
               />
               <StatCard
+                icon={<FaUsers />}
+                label="المدارسة الجماعية"
+                value={userStats.groupReadingCount}
+                color="orange"
+              />
+              <StatCard
                 icon={<FaQuran />}
-                label="صفحات القرآن"
+                label="القراءة اليومية"
                 value={userStats.totalReading}
                 color="blue"
               />
               <StatCard
-                icon={<FaBook />}
-                label="مرات المدارسة"
+                icon={<FaQuran />}
+                label="المدارسة اليومية"
                 value={userStats.totalMudarasa}
                 color="indigo"
-              />
-              <StatCard
-                icon={<FaCheckCircle />}
-                label="نسبة الإنجاز"
-                value={`${userStats.completionRate}%`}
-                color="purple"
               />
             </div>
 
@@ -519,7 +703,7 @@ const HomePage = () => {
             <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden">
               <div className="bg-emerald-700 text-white px-6 py-4">
                 <h2 className="text-xl font-bold flex items-center">
-                  <FaMosque className="ml-2" />
+                  <FaMoon className="ml-2" />
                   متابعة اليوم {selectedDay} من رمضان
                 </h2>
               </div>
@@ -531,7 +715,7 @@ const HomePage = () => {
                     اختر اليوم:
                   </label>
                   <div className="grid grid-cols-5 md:grid-cols-10 gap-2">
-                    {Array.from({ length: 30 }, (_, i) => i + 1).map((day) => (
+                    {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
                       <button
                         key={day}
                         onClick={() => setSelectedDay(day)}
@@ -540,7 +724,7 @@ const HomePage = () => {
                           ${
                             selectedDay === day
                               ? "bg-emerald-600 text-white shadow-lg scale-105"
-                              : "bg-gray-100 text-gray-700 hover:bg-emerald-100"
+                              : "bg-gray-100 text-gray-700 hover:bg-emerald-100 hover:cursor-pointer"
                           }
                         `}
                       >
@@ -553,37 +737,44 @@ const HomePage = () => {
                 <div className="grid md:grid-cols-2 gap-4">
                   <div className="space-y-3">
                     <CheckRow
-                      icon={<FaPray />}
-                      label="صلاة التراويح"
-                      checked={formData.tarawih}
-                      onChange={(v) => setFormData({ ...formData, tarawih: v })}
+                      icon={<FaMosque />}
+                      label="صلاة الضحى"
+                      checked={formData.alduhaa}
+                      onChange={(v) => setFormData({ ...formData, alduhaa: v })}
                     />
                     <CheckRow
-                      icon={<FaStar />}
+                      icon={<FaMosque />}
                       label="السنن الرواتب"
                       checked={formData.sunan}
                       onChange={(v) => setFormData({ ...formData, sunan: v })}
                     />
                     <CheckRow
-                      icon={<FaMoon />}
+                      icon={<FaMosque />}
+                      label="صلاة التراويح"
+                      checked={formData.tarawih}
+                      onChange={(v) => setFormData({ ...formData, tarawih: v })}
+                    />
+
+                    <CheckRow
+                      icon={<FaMosque />}
                       label="صلاة الوتر"
                       checked={formData.witr}
                       onChange={(v) => setFormData({ ...formData, witr: v })}
                     />
+                  </div>
+                  <div className="space-y-3">
                     <CheckRow
-                      icon={<FaSun />}
+                      icon={<FaBookOpen />}
                       label="أذكار الصباح والمساء"
                       checked={formData.azkar}
                       onChange={(v) => setFormData({ ...formData, azkar: v })}
                     />
-                  </div>
-                  <div className="space-y-3">
-                    <NumberRow
-                      icon={<FaBook />}
-                      label="المدارسة (عدد المرات)"
-                      value={formData.mudarasa}
+                    <CheckRow
+                      icon={<FaUsers />}
+                      label="المدارسة الجماعية"
+                      checked={formData.group_reading}
                       onChange={(v) =>
-                        setFormData({ ...formData, mudarasa: v })
+                        setFormData({ ...formData, group_reading: v })
                       }
                     />
                     <NumberRow
@@ -592,13 +783,22 @@ const HomePage = () => {
                       value={formData.reading}
                       onChange={(v) => setFormData({ ...formData, reading: v })}
                     />
+
+                    <NumberRow
+                      icon={<FaQuran />}
+                      label="المدارسة (عدد الصفحات)"
+                      value={formData.mudarasa}
+                      onChange={(v) =>
+                        setFormData({ ...formData, mudarasa: v })
+                      }
+                    />
                   </div>
                 </div>
 
                 <button
                   onClick={handleSave}
                   disabled={saving}
-                  className="w-full mt-8 bg-gradient-to-l from-emerald-600 to-emerald-500 text-white py-4 rounded-xl font-bold text-lg hover:from-emerald-700 hover:to-emerald-600 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full mt-8 bg-linear-to-l from-emerald-600 to-emerald-500 text-white py-4 rounded-xl font-bold text-lg hover:from-emerald-700 hover:to-emerald-600 transition-all duration-300 shadow-lg hover:shadow-xl hover:cursor-pointer transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {saving ? (
                     <span className="flex items-center justify-center">
@@ -634,35 +834,28 @@ const HomePage = () => {
         ) : (
           /* Stats Tab */
           <div className="space-y-8">
-            {/* Global Stats Header */}
-            <div className="bg-white rounded-xl shadow-md p-6">
-              <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center">
-                <FaUsers className="ml-3 text-emerald-600" />
-                مقارنة بين المستخدمين
-              </h2>
-              <p className="text-gray-600">
-                عرض أداء كل مستخدم في الفئات المختلفة
-              </p>
-            </div>
-
-            {/* Category Selector */}
+            {/* Category Filter Tabs */}
             <div className="bg-white rounded-xl shadow-md p-4">
-              <label className="block mb-2 font-semibold text-gray-700">
-                اختر الفئة للمقارنة:
-              </label>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
+              <div className="flex flex-wrap gap-2 justify-center">
+                <button
+                  onClick={() => setSelectedCategory("all")}
+                  className={`px-4 py-2 rounded-lg font-semibold transition-all duration-300 ${
+                    selectedCategory === "all"
+                      ? "bg-emerald-600 text-white shadow-lg"
+                      : "bg-gray-100 text-gray-700 hover:bg-emerald-100"
+                  }`}
+                >
+                  جميع الفئات
+                </button>
                 {categories.map((cat) => (
                   <button
                     key={cat.id}
                     onClick={() => setSelectedCategory(cat.id)}
-                    className={`
-                      flex items-center justify-center space-x-2 space-x-reverse p-3 rounded-lg transition-all duration-300
-                      ${
-                        selectedCategory === cat.id
-                          ? "bg-emerald-600 text-white shadow-lg scale-105"
-                          : "bg-gray-100 text-gray-700 hover:bg-emerald-100"
-                      }
-                    `}
+                    className={`px-4 py-2 rounded-lg font-semibold transition-all duration-300 flex items-center space-x-2 ${
+                      selectedCategory === cat.id
+                        ? "bg-emerald-600 text-white shadow-lg"
+                        : "bg-gray-100 text-gray-700 hover:bg-emerald-100 hover:cursor-pointer"
+                    }`}
                     style={{
                       borderRight:
                         selectedCategory === cat.id
@@ -671,7 +864,7 @@ const HomePage = () => {
                     }}
                   >
                     <span>{cat.icon}</span>
-                    <span className="text-sm">{cat.name}</span>
+                    <span>{cat.name}</span>
                   </button>
                 ))}
               </div>
@@ -683,114 +876,343 @@ const HomePage = () => {
               </div>
             ) : (
               <>
-                {/* User Comparison Chart */}
-                {userComparisonData.length > 0 && (
-                  <div className="bg-white p-6 rounded-xl shadow-md">
-                    <h2 className="text-xl font-bold text-gray-800 mb-6 border-b pb-2 flex items-center">
-                      <span
-                        className="ml-2"
-                        style={{
-                          color: categories.find(
-                            (c) => c.id === selectedCategory,
-                          )?.color,
-                        }}
-                      >
-                        {
-                          categories.find((c) => c.id === selectedCategory)
-                            ?.icon
-                        }
-                      </span>
-                      {categories.find((c) => c.id === selectedCategory)?.name}{" "}
-                      - مقارنة بين المستخدمين
-                    </h2>
-                    <div className="h-96 w-full">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart
-                          data={getCategoryData()}
-                          layout="vertical"
-                          margin={{ top: 20, right: 30, left: 100, bottom: 5 }}
-                        >
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis type="number" />
-                          <YAxis
-                            type="category"
-                            dataKey="name"
-                            width={100}
-                            tick={{ fontSize: 12 }}
-                          />
-                          <Tooltip
-                            formatter={(value: any) => [value, "القيمة"]}
-                            labelFormatter={(label: any) =>
-                              `المستخدم: ${label}`
-                            }
-                          />
-                          <Bar
-                            dataKey="value"
-                            fill={
-                              categories.find((c) => c.id === selectedCategory)
-                                ?.color || "#059669"
-                            }
-                            radius={[0, 4, 4, 0]}
-                          >
-                            {getCategoryData().map((_, index) => (
-                              <Cell
-                                key={`cell-${index}`}
-                                fill={
+                {/* Main Statistics Table */}
+                <div className="bg-white rounded-xl shadow-md overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="bg-emerald-700 text-white">
+                          <th className="px-4 py-3 text-right">#</th>
+                          <th className="px-4 py-3 text-right">اسم المستخدم</th>
+                          <th className="px-4 py-3 text-center">
+                            الأيام المسجلة
+                          </th>
+                          {selectedCategory === "all" ? (
+                            <>
+                              <th className="px-4 py-3 text-center">الضحى</th>
+                              <th className="px-4 py-3 text-center">السنن</th>
+                              <th className="px-4 py-3 text-center">
+                                التراويح
+                              </th>
+                              <th className="px-4 py-3 text-center">الوتر</th>
+                              <th className="px-4 py-3 text-center">الأذكار</th>
+                              <th className="px-4 py-3 text-center">
+                                المدارسة الجماعية
+                              </th>
+                              <th className="px-4 py-3 text-center">القراءة</th>
+                              <th className="px-4 py-3 text-center">
+                                المدارسة
+                              </th>
+                            </>
+                          ) : (
+                            <>
+                              <th className="px-4 py-3 text-center" colSpan={2}>
+                                {
                                   categories.find(
                                     (c) => c.id === selectedCategory,
-                                  )?.color || "#059669"
+                                  )?.name
                                 }
-                              />
-                            ))}
-                          </Bar>
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </div>
-                )}
+                              </th>
+                            </>
+                          )}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {userComparisonData.length > 0 ? (
+                          userComparisonData.map((user, index) => (
+                            <tr
+                              key={user.userId}
+                              className={`border-b hover:bg-emerald-50 transition-colors ${
+                                index % 2 === 0 ? "bg-white" : "bg-gray-50"
+                              }`}
+                            >
+                              <td className="px-4 py-3 font-medium text-gray-700">
+                                {index + 1}
+                              </td>
+                              <td className="px-4 py-3 font-semibold text-emerald-800">
+                                {user.userName}
+                              </td>
+                              <td className="px-4 py-3 text-center font-medium">
+                                {user.totalDays}
+                              </td>
 
-                {/* Summary Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-8">
-                  <SummaryCard
-                    label="إجمالي المستخدمين"
-                    value={totalUniqueUsers}
-                  />
-                  <SummaryCard
-                    label={`إجمالي ${categories.find((c) => c.id === selectedCategory)?.name}`}
-                    value={userComparisonData.reduce(
-                      (sum, user) =>
-                        sum +
-                        (user[
-                          selectedCategory as keyof UserComparisonData
-                        ] as number),
-                      0,
-                    )}
-                  />
-                  <SummaryCard
-                    label="أعلى مستخدم"
-                    value={
-                      userComparisonData.length > 0
-                        ? userComparisonData[0].userName
-                        : "لا يوجد"
-                    }
-                  />
-                  <SummaryCard
-                    label={`أعلى قيمة: ${userComparisonData.length > 0 ? userComparisonData[0][selectedCategory as keyof UserComparisonData] : 0}`}
-                    value=""
-                  />
+                              {selectedCategory === "all" ? (
+                                <>
+                                  {/* الضحى */}
+                                  <td className="px-4 py-3 text-center">
+                                    {user.totalDays > 0 ? (
+                                      <span
+                                        className={`px-2 py-1 rounded-full inline-flex items-center gap-1 ${
+                                          user.alduhaa === maxValues.alduhaa &&
+                                          maxValues.alduhaa > 0
+                                            ? "bg-gradient-to-l from-yellow-500 to-amber-600 text-white shadow-lg font-bold"
+                                            : user.alduhaa > 0
+                                              ? "bg-yellow-100 text-yellow-800"
+                                              : "text-gray-500"
+                                        }`}
+                                      >
+                                        {user.alduhaa}
+                                        {user.alduhaa === maxValues.alduhaa &&
+                                          maxValues.alduhaa > 0 && (
+                                            <span className="text-yellow-200 text-sm">
+                                              👑
+                                            </span>
+                                          )}
+                                      </span>
+                                    ) : (
+                                      <span className="text-gray-400">-</span>
+                                    )}
+                                  </td>
+
+                                  {/* السنن */}
+                                  <td className="px-4 py-3 text-center">
+                                    {user.totalDays > 0 ? (
+                                      <span
+                                        className={`px-2 py-1 rounded-full inline-flex items-center gap-1 ${
+                                          user.sunan === maxValues.sunan &&
+                                          maxValues.sunan > 0
+                                            ? "bg-gradient-to-l from-yellow-500 to-amber-600 text-white shadow-lg font-bold"
+                                            : user.sunan > 0
+                                              ? "bg-teal-100 text-teal-800"
+                                              : "text-gray-500"
+                                        }`}
+                                      >
+                                        {user.sunan}
+                                        {user.sunan === maxValues.sunan &&
+                                          maxValues.sunan > 0 && (
+                                            <span className="text-yellow-200 text-sm">
+                                              👑
+                                            </span>
+                                          )}
+                                      </span>
+                                    ) : (
+                                      <span className="text-gray-400">-</span>
+                                    )}
+                                  </td>
+
+                                  {/* التراويح */}
+                                  <td className="px-4 py-3 text-center">
+                                    {user.totalDays > 0 ? (
+                                      <span
+                                        className={`px-2 py-1 rounded-full inline-flex items-center gap-1 ${
+                                          user.tarawih === maxValues.tarawih &&
+                                          maxValues.tarawih > 0
+                                            ? "bg-gradient-to-l from-yellow-500 to-amber-600 text-white shadow-lg font-bold"
+                                            : user.tarawih > 0
+                                              ? "bg-green-100 text-green-800"
+                                              : "text-gray-500"
+                                        }`}
+                                      >
+                                        {user.tarawih}
+                                        {user.tarawih === maxValues.tarawih &&
+                                          maxValues.tarawih > 0 && (
+                                            <span className="text-yellow-200 text-sm">
+                                              👑
+                                            </span>
+                                          )}
+                                      </span>
+                                    ) : (
+                                      <span className="text-gray-400">-</span>
+                                    )}
+                                  </td>
+
+                                  {/* الوتر */}
+                                  <td className="px-4 py-3 text-center">
+                                    {user.totalDays > 0 ? (
+                                      <span
+                                        className={`px-2 py-1 rounded-full inline-flex items-center gap-1 ${
+                                          user.witr === maxValues.witr &&
+                                          maxValues.witr > 0
+                                            ? "bg-gradient-to-l from-yellow-500 to-amber-600 text-white shadow-lg font-bold"
+                                            : user.witr > 0
+                                              ? "bg-cyan-100 text-cyan-800"
+                                              : "text-gray-500"
+                                        }`}
+                                      >
+                                        {user.witr}
+                                        {user.witr === maxValues.witr &&
+                                          maxValues.witr > 0 && (
+                                            <span className="text-yellow-200 text-sm">
+                                              👑
+                                            </span>
+                                          )}
+                                      </span>
+                                    ) : (
+                                      <span className="text-gray-400">-</span>
+                                    )}
+                                  </td>
+
+                                  {/* الأذكار */}
+                                  <td className="px-4 py-3 text-center">
+                                    {user.totalDays > 0 ? (
+                                      <span
+                                        className={`px-2 py-1 rounded-full inline-flex items-center gap-1 ${
+                                          user.azkar === maxValues.azkar &&
+                                          maxValues.azkar > 0
+                                            ? "bg-gradient-to-l from-yellow-500 to-amber-600 text-white shadow-lg font-bold"
+                                            : user.azkar > 0
+                                              ? "bg-amber-100 text-amber-800"
+                                              : "text-gray-500"
+                                        }`}
+                                      >
+                                        {user.azkar}
+                                        {user.azkar === maxValues.azkar &&
+                                          maxValues.azkar > 0 && (
+                                            <span className="text-yellow-200 text-sm">
+                                              👑
+                                            </span>
+                                          )}
+                                      </span>
+                                    ) : (
+                                      <span className="text-gray-400">-</span>
+                                    )}
+                                  </td>
+
+                                  {/* المدارسة الجماعية */}
+                                  <td className="px-4 py-3 text-center">
+                                    {user.totalDays > 0 ? (
+                                      <span
+                                        className={`px-2 py-1 rounded-full inline-flex items-center gap-1 ${
+                                          user.group_reading ===
+                                            maxValues.group_reading &&
+                                          maxValues.group_reading > 0
+                                            ? "bg-gradient-to-l from-yellow-500 to-amber-600 text-white shadow-lg font-bold"
+                                            : user.group_reading > 0
+                                              ? "bg-orange-100 text-orange-800"
+                                              : "text-gray-500"
+                                        }`}
+                                      >
+                                        {user.group_reading}
+                                        {user.group_reading ===
+                                          maxValues.group_reading &&
+                                          maxValues.group_reading > 0 && (
+                                            <span className="text-yellow-200 text-sm">
+                                              👑
+                                            </span>
+                                          )}
+                                      </span>
+                                    ) : (
+                                      <span className="text-gray-400">-</span>
+                                    )}
+                                  </td>
+
+                                  {/* القراءة */}
+                                  <td className="px-4 py-3 text-center font-medium">
+                                    {user.totalDays > 0 ? (
+                                      <span
+                                        className={`px-2 py-1 rounded-lg inline-flex items-center gap-1 ${
+                                          user.reading === maxValues.reading &&
+                                          maxValues.reading > 0
+                                            ? "bg-gradient-to-l from-yellow-500 to-amber-600 text-white shadow-lg font-bold"
+                                            : "text-blue-700"
+                                        }`}
+                                      >
+                                        {user.reading}
+                                        {user.reading === maxValues.reading &&
+                                          maxValues.reading > 0 && (
+                                            <span className="text-yellow-200 text-sm">
+                                              👑
+                                            </span>
+                                          )}
+                                      </span>
+                                    ) : (
+                                      "-"
+                                    )}
+                                  </td>
+
+                                  {/* المدارسة */}
+                                  <td className="px-4 py-3 text-center font-medium">
+                                    {user.totalDays > 0 ? (
+                                      <span
+                                        className={`px-2 py-1 rounded-lg inline-flex items-center gap-1 ${
+                                          user.mudarasa ===
+                                            maxValues.mudarasa &&
+                                          maxValues.mudarasa > 0
+                                            ? "bg-gradient-to-l from-yellow-500 to-amber-600 text-white shadow-lg font-bold"
+                                            : "text-indigo-700"
+                                        }`}
+                                      >
+                                        {user.mudarasa}
+                                        {user.mudarasa === maxValues.mudarasa &&
+                                          maxValues.mudarasa > 0 && (
+                                            <span className="text-yellow-200 text-sm">
+                                              👑
+                                            </span>
+                                          )}
+                                      </span>
+                                    ) : (
+                                      "-"
+                                    )}
+                                  </td>
+                                </>
+                              ) : (
+                                <td
+                                  className="px-4 py-3 text-center font-bold"
+                                  colSpan={2}
+                                >
+                                  {user.totalDays > 0 ? (
+                                    <span
+                                      className={`px-4 py-2 rounded-lg text-white inline-flex items-center justify-center gap-2 transition-all duration-300 ${
+                                        (user[
+                                          selectedCategory as keyof UserComparisonData
+                                        ] as number) === maxValue &&
+                                        maxValue > 0
+                                          ? "bg-linear-to-l from-yellow-500 to-amber-600 shadow-lg scale-105 ring-2 ring-yellow-300"
+                                          : ""
+                                      }`}
+                                      style={{
+                                        backgroundColor:
+                                          (user[
+                                            selectedCategory as keyof UserComparisonData
+                                          ] as number) === maxValue &&
+                                          maxValue > 0
+                                            ? undefined
+                                            : categories.find(
+                                                (c) =>
+                                                  c.id === selectedCategory,
+                                              )?.color,
+                                      }}
+                                    >
+                                      {
+                                        user[
+                                          selectedCategory as keyof UserComparisonData
+                                        ] as number
+                                      }
+                                      {(user[
+                                        selectedCategory as keyof UserComparisonData
+                                      ] as number) === maxValue &&
+                                        maxValue > 0 && (
+                                          <span className="text-yellow-200 text-lg">
+                                            🏆
+                                          </span>
+                                        )}
+                                    </span>
+                                  ) : (
+                                    <span className="text-gray-400">-</span>
+                                  )}
+                                </td>
+                              )}
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td
+                              colSpan={selectedCategory === "all" ? 11 : 4}
+                              className="text-center py-8 text-gray-500"
+                            >
+                              لا توجد بيانات لعرضها
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </>
             )}
           </div>
         )}
       </main>
-
-      {/* Footer */}
-      <footer className="bg-white mt-12 py-6 border-t">
-        <div className="container mx-auto px-4 text-center text-gray-600">
-          <p>جميع الحقوق محفوظة © {new Date().getFullYear()} - مُتابع رمضان</p>
-        </div>
-      </footer>
     </div>
   );
 };
@@ -852,7 +1274,7 @@ const CheckRow = ({
     }`}
     onClick={() => onChange(!checked)}
   >
-    <div className="flex items-center space-x-3 space-x-reverse">
+    <div className="flex items-center space-x-3 ">
       <span
         className={`text-xl ${checked ? "text-emerald-700" : "text-gray-500"}`}
       >
@@ -887,7 +1309,7 @@ const NumberRow = ({
   onChange: (v: number) => void;
 }) => (
   <div className="p-4 bg-gray-50 rounded-lg border-2 border-transparent hover:border-emerald-200 transition-all duration-300">
-    <div className="flex items-center space-x-3 space-x-reverse mb-2">
+    <div className="flex items-center space-x-3  mb-2">
       <span className="text-xl text-emerald-600">{icon}</span>
       <span className="font-medium text-gray-700">{label}</span>
     </div>
